@@ -1,0 +1,41 @@
+{
+  "name": "alexa-skill-lambda-http-switch",
+  "version": "0.1.0",
+  "main": "index.js",
+  "files": [
+    "dst/*.js"
+  ],
+  "dependencies": {
+    "@types/luxon": "^2.0.1",
+    "@types/uuid": "^8.3.1",
+    "axios": "^0.21.1",
+    "luxon": "^2.0.2",
+    "uuid": "^8.3.2"
+  },
+  "bundledDependencies": [
+    "axios",
+    "luxon",
+    "uuid"
+  ],
+  "devDependencies": {
+    "@types/node": "^16.7.1",
+    "@typescript-eslint/eslint-plugin": "^4.29.2",
+    "@typescript-eslint/parser": "^4.29.2",
+    "aws-sdk": "^2.978.0",
+    "eslint": "^7.32.0",
+    "npm-pack-zip": "^1.2.9",
+    "typescript": "^4.1.5"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "archive": "npm-pack-zip",
+    "set-handler": "aws lambda update-function-configuration --function-name ${npm_package_name} --handler dst/index.handler",
+    "deploy": "npm run build && npm run archive && aws lambda update-function-code --function-name ${npm_package_name} --zip-file fileb://${npm_package_name}.zip"
+  },
+  "license": "ISC",
+  "author": "nana4rider",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/nana4rider/alexa-skill-lambda-http-switch.git"
+  }
+}

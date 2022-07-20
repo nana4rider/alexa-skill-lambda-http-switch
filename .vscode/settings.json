@@ -1,0 +1,19 @@
+{
+  "files.exclude": {
+    "dst/**/*": true,
+    "**/node_modules/**/*": true,
+    "**/Temp/**/*": true,
+    "**/Downloads/**/*": true
+  },
+  "files.autoGuessEncoding": true,
+  "typescript.validate.enable": true,
+  "eslint.debug": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "eslint.validate": [
+    "typescript"
+  ],
+  "todo.embedded.exclude": ["./dst/**/*", "node_modules/**/*", ".git/**/*"]
+}
