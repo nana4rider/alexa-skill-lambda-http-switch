@@ -33,6 +33,12 @@ exports.handler = async (request: any) => {
     } else if (directiveNamespace === 'Alexa.PowerController' && directiveName === 'TurnOff') {
       // OFF
       response = await handleChangePower(request, 'OFF');
+    } else if (directiveNamespace === 'Alexa.SceneController' && directiveName === 'Activate') {
+      // シーン有効
+      response = await handleChangeScene(request, 'ON');
+    } else if (directiveNamespace === 'Alexa.SceneController' && directiveName === 'Deactivate') {
+      // シーン無効
+      response = await handleChangeScene(request, 'OFF');
     } else {
       throw new Error(`namespace: ${directiveNamespace}, name: ${directiveName}`);
     }
@@ -101,7 +107,16 @@ async function handleDiscover(request: any): Promise<object> {
       'description': device.name,
       // https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-discovery.html#display-categories
       'displayCategories': [device.category],
-      'capabilities': [
+      'capabilities': device.category.endsWith('_TRIGGER') ? [
+        // シーン
+        {
+          'type': 'AlexaInterface',
+          'interface': 'Alexa.SceneController',
+          'version': '3',
+          'supportsDeactivation': true
+        }
+      ] : [
+        // スイッチ
         {
           'type': 'AlexaInterface',
           'interface': 'Alexa',
@@ -179,9 +194,10 @@ async function handleReportState(request: any) {
 
   const apiUrl = scanResult.Item.apiUrl as string;
   const apiKey = scanResult.Item.apiKey as string;
+  const authorization = apiKey.includes(' ') ? apiKey : 'Api-Key ' + apiKey;
 
   const reponse = await axios.get(apiUrl, {
-    headers: { 'Authorization': `Api-Key ${apiKey}` },
+    headers: { 'Authorization': authorization }
   });
 
   const power = reponse.data.state;
@@ -219,10 +235,10 @@ async function handleReportState(request: any) {
  * https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-powercontroller.html#directives
  *
  * @param event
- * @param power
+ * @param state
  * @returns
  */
-async function handleChangePower(request: any, power: 'ON' | 'OFF') {
+async function handleChangePower(request: any, state: 'ON' | 'OFF') {
   const endpointId = request.directive.endpoint.endpointId as string;
 
   const scanResult = await db.get({
@@ -236,10 +252,11 @@ async function handleChangePower(request: any, power: 'ON' | 'OFF') {
 
   const apiUrl = scanResult.Item.apiUrl as string;
   const apiKey = scanResult.Item.apiKey as string;
+  const authorization = apiKey.includes(' ') ? apiKey : 'Api-Key ' + apiKey;
 
   await axios.put(apiUrl,
-    { 'state': power },
-    { headers: { 'Authorization': `Api-Key ${apiKey}` } }
+    { 'state': state },
+    { headers: { 'Authorization': authorization } }
   );
 
   const now = DateTime.local().toISO();
@@ -262,11 +279,64 @@ async function handleChangePower(request: any, power: 'ON' | 'OFF') {
         {
           'namespace': 'Alexa.PowerController',
           'name': 'powerState',
-          'value': power,
+          'value': state,
           'timeOfSample': now,
           'uncertaintyInMilliseconds': 0,
         }
       ]
+    }
+  };
+}
+
+/**
+ * シーン状態変更
+ * https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-scenecontroller.html#directives
+ *
+ * @param event
+ * @param state
+ * @returns
+ */
+async function handleChangeScene(request: any, state: 'ON' | 'OFF') {
+  const endpointId = request.directive.endpoint.endpointId as string;
+
+  const scanResult = await db.get({
+    TableName: 'alexa_home_switch_devices',
+    Key: { id: endpointId }
+  }).promise();
+
+  if (!scanResult.Item) {
+    throw new Error(`指定された機器が見つかりません: ${endpointId}`);
+  }
+
+  const apiUrl = scanResult.Item.apiUrl as string;
+  const apiKey = scanResult.Item.apiKey as string;
+  const authorization = apiKey.includes(' ') ? apiKey : 'Api-Key ' + apiKey;
+
+  await axios.put(apiUrl,
+    { 'state': state },
+    { headers: { 'Authorization': authorization } }
+  );
+
+  const now = DateTime.local().toISO();
+
+  return {
+    'event': {
+      'header': {
+        'namespace': 'Alexa.SceneController',
+        'name': state === 'ON' ? 'ActivationStarted' : 'DeactivationStarted',
+        'messageId': uuid(),
+        'correlationToken': request.directive.header.correlationToken,
+        'payloadVersion': '3'
+      },
+      'endpoint': {
+        'endpointId': endpointId,
+      }
+    },
+    'payload': {
+      'cause': {
+        'type': 'APP_INTERACTION'
+      },
+      'timestamp': now
     }
   };
 }

@@ -3,7 +3,7 @@ Alexa Smart Home Skill HTTP Switch
 
 ## 概要
 RESTful APIと接続し、
-Alexaの[スイッチデバイス](https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-powercontroller.html)として認識させるプログラムです。
+Alexaの[スイッチデバイス](https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-powercontroller.html)もしくは[シーン](https://developer.amazon.com/ja-JP/docs/alexa/device-apis/alexa-scenecontroller.html)として認識させるプログラムです。
 
 ## DynamoDB
 テーブル名`alexa_home_switch_devices`で下記データを作成
@@ -22,7 +22,7 @@ Alexaの[スイッチデバイス](https://developer.amazon.com/ja-JP/docs/alexa
     "S": "デバイス名(任意)"
   },
   "category": {
-    "S": "カテゴリ(SWITCH|LIGHT)"
+    "S": "カテゴリ(SWITCH|LIGHT|SCENE_TRIGGER)"
   }
 }
 ```
